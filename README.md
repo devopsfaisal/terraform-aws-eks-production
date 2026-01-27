@@ -59,6 +59,7 @@ This architecture is intentionally simple but production-oriented. It’s design
 - Scalability
 
 ## 📂 Project Structure
+```text
 └── terraform-aws-eks-production
     ├── create-eks-terraform.sh
     ├── main.tf
