@@ -83,7 +83,6 @@ This architecture is intentionally simple but production-oriented. It’s design
     ├── variables.tf
     └── versions.tf
 ```
-
 ## Key Best Practices
 - Private subnets
 - IAM
