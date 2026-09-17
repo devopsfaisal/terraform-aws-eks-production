@@ -106,7 +106,9 @@ The architecture follows a modular and least-privilege design:
     ├── bootstrap
     │   └── main.tf                     # S3 bucket + DynamoDB remote state storage bootstrapper
     ├── docs
-    │   └── LEARNING_PATH.md            # Deep dive guide, 17 interview Q&As & production case studies
+    │   ├── LEARNING_PATH.md            # English guide (Global & Recruiter Standard)
+    │   ├── LEARNING_PATH.hi.md         # Hinglish guide (Conversational learning)
+    │   └── LEARNING_PATH.ar.md         # Arabic guide (الدليل الشامل باللغة العربية)
     ├── modules
     │   ├── eks                         # EKS 1.36, KMS, SGs, OIDC, Node Groups, Add-ons
     │   │   ├── main.tf
@@ -207,15 +209,20 @@ terraform destroy -auto-approve
 
 ---
 
-## 🎓 Learning Path & Interview Prep
-Looking to understand the architectural "why", networking mechanics, or prepare for DevOps/SRE interviews?  
-👉 Read our dedicated guide: **[docs/LEARNING_PATH.md](docs/LEARNING_PATH.md)**
+## 🎓 Learning Path & Interview Prep (Trilingual / متعدد اللغات)
+Looking to understand the architectural "why", networking mechanics, or prepare for DevOps/SRE interviews? Choose your preferred language:
 
-Includes:
-- Deep-dive into VPC CNI secondary IP mechanics.
+| Language | Guide Link | Focus & Target Audience |
+| :--- | :--- | :--- |
+| 🇬🇧 **English** | **[docs/LEARNING_PATH.md](docs/LEARNING_PATH.md)** | Global & Recruiter Standard, Enterprise Technical English |
+| 🇮🇳 **Hinglish** | **[docs/LEARNING_PATH.hi.md](docs/LEARNING_PATH.hi.md)** | Hindi in Roman Script, Conversational & Step-by-Step Learning |
+| 🇸🇦 **العربية (Arabic)** | **[docs/LEARNING_PATH.ar.md](docs/LEARNING_PATH.ar.md)** | الدليل المعماري الشامل باللغة العربية الفصحى لمجتمع مهندسي السحابة في الخليج والشرق الأوسط |
+
+Each guide includes:
+- Deep-dive into VPC CNI secondary IP mechanics & IMDSv2 anti-SSRF defense.
 - Pod IAM credential flow using OIDC and AWS STS (`AssumeRoleWithWebIdentity`).
-- Why instance profile god-roles are critical vulnerabilities.
-- **Top 15 Real-World DevOps / SRE Interview Questions & Detailed Answers**.
+- **Top 17 Real-World DevOps / SRE Interview Questions & Detailed Answers**.
+- **Section 10: Real-World Production War Stories & Case Studies** (Cross-job scoping bugs, orphaned state traps, and auto-bootstrap solutions).
 
 ---
 
