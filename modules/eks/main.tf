@@ -214,7 +214,10 @@ resource "aws_eks_node_group" "nodes" {
   }
 
   lifecycle {
-    ignore_changes = [scaling_config[0].desired_size]
+    ignore_changes = [
+      scaling_config[0].desired_size,
+      launch_template[0].version
+    ]
   }
 
   depends_on = [
