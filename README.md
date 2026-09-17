@@ -101,11 +101,14 @@ The architecture follows a modular and least-privilege design:
     ├── .github
     │   └── workflows
     │       ├── terraform-ci.yml        # Checkpoint 1-3: Fmt, Trivy scan, validate & PR plan
-    │       └── terraform-apply.yml     # Checkpoint 4: Continuous deployment on main merge
+    │       ├── terraform-apply.yml     # Checkpoint 4: Gated Production Apply (Manual dispatch)
+    │       └── terraform-destroy.yml   # Protected Manual Teardown (Confirmation & approval gated)
+    ├── bootstrap
+    │   └── main.tf                     # S3 bucket + DynamoDB remote state storage bootstrapper
     ├── docs
-    │   └── LEARNING_PATH.md            # Deep dive guide & Top 15 DevOps interview Q&A
+    │   └── LEARNING_PATH.md            # Deep dive guide, 17 interview Q&As & production case studies
     ├── modules
-    │   ├── eks                         # EKS Cluster, KMS, SGs, OIDC, Node Groups, Add-ons
+    │   ├── eks                         # EKS 1.36, KMS, SGs, OIDC, Node Groups, Add-ons
     │   │   ├── main.tf
     │   │   ├── outputs.tf
     │   │   └── variables.tf
@@ -117,6 +120,8 @@ The architecture follows a modular and least-privilege design:
     │       ├── main.tf
     │       ├── outputs.tf
     │       └── variables.tf
+    ├── scripts
+    │   └── teardown.sh                 # Guaranteed reverse-dependency AWS resource cleanup
     ├── .gitignore
     ├── main.tf                         # Root composition module
     ├── outputs.tf                      # Cluster endpoint, kubeconfig command, SG IDs
@@ -146,8 +151,9 @@ Our repository enforces a multi-gate GitOps review process before any code touch
 | :--- | :--- | :--- | :--- |
 | **Checkpoint 1** | Code Quality | `terraform fmt -check -diff` | Enforces uniform HCL styling |
 | **Checkpoint 2** | DevSecOps Scan | Trivy IaC Scanner | Detects misconfigurations & CVEs |
-| **Checkpoint 3** | Validation & Plan | `terraform validate` & PR plan | Validates provider schema & comments diff |
-| **Checkpoint 4** | Production Apply | `terraform apply -auto-approve` | Continuous deployment triggered on `main` merge |
+| **Checkpoint 3** | Validation & Plan | `terraform validate` & PR plan | Validates provider schema & comments diff on PR |
+| **Checkpoint 4** | Production Apply | Gated `workflow_dispatch` | Human-approved deployment with confirmation check |
+| **Protected Teardown** | Safe Teardown | `terraform-destroy.yml` | Requires string `DESTROY-PRODUCTION` + environment approval |
 
 ---
 
