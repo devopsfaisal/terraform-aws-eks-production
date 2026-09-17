@@ -3,7 +3,7 @@
 > 🌐 **Language Selector / مبدّل اللغات / भाषा चुनें**:  
 > **[🇬🇧 English (Current)]** • [🇮🇳 Hinglish](LEARNING_PATH.hi.md) • [🇸🇦 العربية](LEARNING_PATH.ar.md)
 
-> **Author**: DevOps Faisal  
+> **Author**: [Faisal Ansari](https://faisal.host) ([LinkedIn](https://www.linkedin.com/in/clumsyfaisal/) • [GitHub](https://github.com/devopsfaisal))  
 > **Target Region**: AWS `ap-south-1` (Mumbai)  
 > **Terraform Engine**: `>= 1.9.0` (Tested on `v1.16.3`)  
 > **Kubernetes Version**: `1.36` (Latest Modern EKS Release)  

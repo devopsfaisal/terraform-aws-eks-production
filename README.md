@@ -4,6 +4,8 @@
 [![AWS](https://img.shields.io/badge/AWS-ap--south--1-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white)](https://aws.amazon.com/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-1.36-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)](https://kubernetes.io/)
 [![GitOps](https://img.shields.io/badge/GitOps-GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/features/actions)
+[![Portfolio](https://img.shields.io/badge/Portfolio-faisal.host-00B4D8?style=for-the-badge&logo=google-chrome&logoColor=white)](https://faisal.host)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-clumsyfaisal-0077B5?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/clumsyfaisal/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
 Production-ready, enterprise-grade **AWS EKS Cluster** built using **Terraform modular architecture**, deployed to **AWS `ap-south-1` (Mumbai)** following CIS Benchmark, AWS Well-Architected Framework, and automated **GitOps CI/CD validation pipelines**.
@@ -20,6 +22,7 @@ Production-ready, enterprise-grade **AWS EKS Cluster** built using **Terraform m
 - [How to Use This Repo](#how-to-use-this-repo)
 - [🎓 Learning Path & Interview Prep](#-learning-path--interview-prep)
 - [Who This Is For](#who-this-is-for)
+- [👨‍💻 Author & Connect](#-author--connect)
 
 ---
 
@@ -230,6 +233,16 @@ Each guide includes:
 - **DevOps Engineers & SREs**: Ready-to-adapt production baseline for real workloads.
 - **Platform Architects**: Reusable, compliant Terraform blueprint for AWS EKS.
 - **Cloud Practitioners & Learners**: Complete pedagogical journey covering modern GitOps, Terraform 1.16+, and Kubernetes security.
+
+---
+
+## 👨‍💻 Author & Connect
+Architected and crafted with ❤️ by **Faisal Ansari**.
+
+- 🌐 **Portfolio**: [https://faisal.host](https://faisal.host)
+- 💼 **LinkedIn**: [linkedin.com/in/clumsyfaisal](https://www.linkedin.com/in/clumsyfaisal/)
+- 🐙 **GitHub**: [@devopsfaisal](https://github.com/devopsfaisal)
+- 📬 **Inquiries**: Open for Senior DevOps, SRE & Cloud Platform Engineering opportunities.
 
 ---
 
