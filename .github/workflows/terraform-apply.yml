@@ -1,0 +1,75 @@
+name: "Terraform Apply / GitOps CD Pipeline"
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "**.tf"
+      - "**.tfvars*"
+  workflow_dispatch:
+    inputs:
+      approval_confirmation:
+        description: "Type 'APPLY' to manually trigger production deployment"
+        required: true
+        default: "APPLY"
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  # ============================================================================
+  # Checkpoint 4: Continuous Deployment / Apply Gate (Human Approval Gated)
+  # ============================================================================
+  terraform-apply:
+    name: "Checkpoint 4: Production Apply"
+    runs-on: ubuntu-latest
+    # GitHub Environment: Configure "Required reviewers" under Settings > Environments > production
+    # GitHub will automatically PAUSE and wait for your manual approval before applying!
+    environment: production
+    steps:
+      - name: Validate Manual Trigger Authorization
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          if [ "${{ github.event.inputs.approval_confirmation }}" != "APPLY" ]; then
+            echo "❌ [ABORTED]: Confirmation mismatch! You entered '${{ github.event.inputs.approval_confirmation }}'."
+            echo "To apply, you must enter: APPLY"
+            exit 1
+          fi
+          echo "✅ Authorization confirmed by @${{ github.actor }}"
+
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.3"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "ap-south-1"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        id: plan
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Terraform Apply
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Output EKS Access Command
+        run: |
+          echo "### 🚀 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "Run the following command to access your cluster:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          terraform output -raw configure_kubectl >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

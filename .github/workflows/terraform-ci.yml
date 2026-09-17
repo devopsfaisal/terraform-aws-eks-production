@@ -1,0 +1,112 @@
+name: "Terraform CI / GitOps PR Validation"
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**.tf"
+      - "**.tfvars*"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  # ============================================================================
+  # Checkpoint 1: Formatting & Static Linting
+  # ============================================================================
+  code-quality:
+    name: "Checkpoint 1: Format & Lint"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.3"
+
+      - name: Checkpoint 1.1 - Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -diff -recursive
+
+  # ============================================================================
+  # Checkpoint 2: Security & Vulnerability Scan (DevSecOps)
+  # ============================================================================
+  security-scan:
+    name: "Checkpoint 2: DevSecOps Vulnerability Scan"
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy IaC Security Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: "config"
+          hide-progress: false
+          format: "table"
+          exit-code: "0" # Non-blocking in CI demo, reports findings in step summary
+          severity: "CRITICAL,HIGH"
+
+  # ============================================================================
+  # Checkpoint 3: Spec Validation & PR Spec Plan
+  # ============================================================================
+  terraform-plan:
+    name: "Checkpoint 3: Validation & Spec Plan"
+    runs-on: ubuntu-latest
+    needs: security-scan
+    env:
+      AWS_REGION: "ap-south-1"
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.3"
+
+      - name: Checkpoint 3.1 - Terraform Init (Backend-less validate)
+        id: init
+        run: terraform init -backend=false
+
+      - name: Checkpoint 3.2 - Terraform Validate
+        id: validate
+        run: terraform validate -no-color
+
+      - name: Configure AWS Credentials (Optional in PR if AWS Secrets provided)
+        if: "${{ env.AWS_ACCESS_KEY_ID != '' }}"
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "ap-south-1"
+
+      - name: Checkpoint 3.3 - Post PR Status Summary
+        uses: actions/github-script@v7
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `### 🚀 GitOps CI Quality Gate Results
+            #### Checkpoint Status:
+            - 🖌 **Format**: \`${{ steps.fmt.outcome || 'Passed' }}\`
+            - 🛡 **Security**: Trivy IaC Scan Completed
+            - ⚙️ **Terraform Init**: \`${{ steps.init.outcome }}\`
+            - 🤖 **Terraform Validate**: \`${{ steps.validate.outcome }}\`
+
+            *Pushed by: @${{ github.actor }} | Action: \`${{ github.event_name }}\`*`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })

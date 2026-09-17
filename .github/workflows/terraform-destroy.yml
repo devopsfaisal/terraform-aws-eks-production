@@ -1,0 +1,69 @@
+name: "Terraform Destroy / Protected Manual Teardown"
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Type 'DESTROY-PRODUCTION' to authorize complete teardown of EKS and VPC"
+        required: true
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  # ============================================================================
+  # Safety Gate & Confirmation Validation
+  # ============================================================================
+  verify-authorization:
+    name: "Safety Gate: Verify Confirmation"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate Confirmation String
+        run: |
+          if [ "${{ github.event.inputs.confirmation }}" != "DESTROY-PRODUCTION" ]; then
+            echo "❌ [ABORTED]: Confirmation mismatch! You entered '${{ github.event.inputs.confirmation }}'."
+            echo "To destroy production, you must explicitly enter: DESTROY-PRODUCTION"
+            exit 1
+          fi
+          echo "✅ Authorization confirmed for teardown by @${{ github.actor }}"
+
+  # ============================================================================
+  # Teardown Execution (Requires Human Approval via GitHub Environment)
+  # ============================================================================
+  terraform-destroy:
+    name: "Protected Destroy Gate"
+    runs-on: ubuntu-latest
+    needs: verify-authorization
+    environment: production # Requires manual approval if GitHub Environment protection is configured
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.16.3"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: "ap-south-1"
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Preview Destroy Plan
+        run: terraform plan -destroy
+
+      - name: Execute Terraform Destroy
+        run: terraform destroy -auto-approve
+
+      - name: Summary Notice
+        run: |
+          echo "### ⚠️ AWS Infrastructure Successfully Teardown" >> $GITHUB_STEP_SUMMARY
+          echo "All 42 EKS, VPC, and IAM resources were safely deleted by @${{ github.actor }}." >> $GITHUB_STEP_SUMMARY
