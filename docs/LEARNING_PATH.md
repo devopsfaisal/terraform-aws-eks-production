@@ -18,6 +18,7 @@
 7. [Module 4: GitOps CI/CD Pipeline & Checkpoints](#7-module-4-gitops-cicd-pipeline--checkpoints)
 8. [Top 15 Real-World DevOps/SRE Interview Questions & Answers](#8-top-15-real-world-devopssre-interview-questions--answers)
 9. [Hands-On Practice & Verification Commands](#9-hands-on-practice--verification-commands)
+10. [Real-World Production Troubleshooting & War Stories (Case Studies)](#10-real-world-production-troubleshooting--war-stories-case-studies)
 
 ---
 
@@ -345,6 +346,12 @@ Destroy ke liye humne automated trigger ko completely disable kar diya hai.
 ### Q15: Pure setup ko destroy karte waqt resources kis order me delete hote hain?
 **Answer**: Terraform reverse dependency order follow karta hai: Pehle EKS Add-ons aur Node Groups delete hote hain, fir EKS Cluster aur KMS keys, fir IAM roles, NAT Gateways, EIPs, Subnets, aur last me VPC delete hota hai.
 
+### Q16: GitHub Actions me multi-job pipelines ke beech step outcome ya variables kaise share hote hain?
+**Answer**: GitHub Actions me `steps` context strictly usi specific job tak bounded hota hai. Dusre jobs me data bhejne ke liye job-level `outputs` declare karna padta hai (`outputs: { fmt_outcome: ${{ steps.fmt.outcome }} }`). Consuming job ko `needs: [producer_job]` declare karna hota hai aur `${{ needs.producer_job.outputs.fmt_outcome }}` ke zariye value read karni hoti hai.
+
+### Q17: Agar CI/CD runner par bina remote backend (S3) ke `terraform apply` chal gaya, toh kya disaster hoga aur isse kaise bachein?
+**Answer**: Ephemeral runner VM terminate hote hi `terraform.tfstate` permanently delete ho jata hai (State Loss). Cloud me EKS, EC2, NAT Gateways chalte rehte hain jinka bill banta rehta hai ("Ghost Infrastructure"). Aage chalkar `terraform destroy` chalane par Terraform "0 destroyed" bolta hai kyunki state file empty hoti hai. Isse bachne ke liye: 1) State hamesha remote S3 + DynamoDB locking me rakhein, 2) Apply ko strictly human approval gated rakhein (`workflow_dispatch`), aur 3) Deterministic AWS API tag-based teardown automation fallback rakhein.
+
 ---
 
 ## 9. Hands-On Practice & Verification Commands
@@ -383,5 +390,87 @@ kubectl get pods -n kube-system
 
 ### 4. Teardown / Cleanup
 ```bash
+# Option A: Standard Terraform Destroy (Jab terraform.tfstate available ho)
 terraform destroy -auto-approve
+
+# Option B: Guaranteed AWS Teardown Script (State loss, orphan cleanup, ya CI/CD fallback ke liye)
+chmod +x scripts/teardown.sh
+./scripts/teardown.sh
 ```
+
+---
+
+## 10. Real-World Production Troubleshooting & War Stories (Case Studies)
+
+Is repository ko develop karte waqt do aisi critical production problems aayi jo har senior DevOps engineer ko face karni padti hain. Inka deep technical breakdown:
+
+### ⚠️ Case Study 1: GitHub Actions Cross-Job Context Scoping Bug
+
+* **Error Message**:
+  ```text
+  Context access might be invalid: fmt @[.github/workflows/terraform-ci.yml:L100]
+  ```
+* **The Root Cause**:
+  Workflow ko humne 3 stages me break kiya:
+  1. `code-quality` (Format check step `id: fmt`)
+  2. `security-scan` (Trivy DevSecOps)
+  3. `terraform-plan` (Init, Validate & PR status comment)
+  
+  PR comment script `terraform-plan` job ke andar tha aur woh access kar raha tha:
+  ```yaml
+  - 🖌 **Format**: `${{ steps.fmt.outcome || 'Passed' }}`
+  ```
+  GitHub Actions me `steps` context strictly **single job** ke scope me rehta hai. `terraform-plan` job ke paas `steps.fmt` naam ka koi step nahi tha, isliye linter ne warning di aur runtime par woh `null` evaluate hua.
+
+* **Production Solution**:
+  1. `code-quality` job par explicit `outputs` expose kiya:
+     ```yaml
+     code-quality:
+       outputs:
+         fmt_outcome: ${{ steps.fmt.outcome }}
+     ```
+  2. `terraform-plan` me dependency declare ki:
+     ```yaml
+     terraform-plan:
+       needs: [code-quality, security-scan]
+     ```
+  3. PR comment script me `needs` context se read kiya:
+     ```yaml
+     - 🖌 **Format**: `${{ needs.code-quality.outputs.fmt_outcome || 'Passed' }}`
+     ```
+
+---
+
+### 🚨 Case Study 2: Ephemeral CI Runner & The "Ghost Cluster" Trap (Orphaned Cloud Resources)
+
+* **Incident Scenario**:
+  Commit push hone par GitHub Actions ke `terraform-apply.yml` ne EKS cluster (`eks-production-cluster`), 6 Subnets, NAT Gateway aur Worker Nodes AWS par successfully provision kar diye.
+  Lekin `versions.tf` me remote S3 backend commented tha, isliye `terraform.tfstate` GitHub runner VM ke local disk par store hua.
+  Jab runner complete hua, VM destroy ho gaya — aur **state file permanently gayab ho gayi**!
+
+* **The Disaster**:
+  Agar user baad me CI/CD se `terraform destroy` chalata:
+  - Terraform runner par fresh empty state initialize karta.
+  - `terraform plan -destroy` dekhta ki state me 0 resources hain.
+  - Output aata: `Resources: 0 destroyed.`
+  - **Lekin AWS me EKS ($0.10/hr) aur NAT Gateway ($0.045/hr) active reh jaate aur bank account se paise kat-te rehte!**
+
+* **Production Solution & Architectural Defense**:
+  1. **Strict CI/CD Gating**: `terraform-apply.yml` se automatic push trigger disable kiya. Ab apply sirf manual `workflow_dispatch` with confirmation input (`APPLY`) aur GitHub Environment Reviewers se hi run ho sakta hai.
+  2. **Automated Teardown Script (`scripts/teardown.sh`)**:
+     Ek intelligent bash script likha gaya jo AWS APIs ko directly query karta hai aur reverse dependency order me resources clean karta hai:
+     - Step 1: EKS Node Groups delete karo & wait karo.
+     - Step 2: EKS Addons & Control Plane delete karo & wait karo.
+     - Step 3: Launch Templates delete karo.
+     - Step 4: NAT Gateways delete karo & wait karo, fir Elastic IPs release karo.
+     - Step 5: Remaining ENIs wait karke release karo.
+     - Step 6: Custom Security Groups ke ingress/egress revoke karke delete karo.
+     - Step 7: Subnets & Route Tables delete karo.
+     - Step 8: Internet Gateway detach karke VPC delete karo.
+     - Step 9: IAM Roles se policies detach karke delete karo.
+     - Step 10: KMS Key deletion schedule karo.
+  3. **Multi-layer Destroy Pipeline (`terraform-destroy.yml`)**:
+     - Layer 1: Input string check (`DESTROY-PRODUCTION`).
+     - Layer 2: Environment approval gate (`environment: production`).
+     - Layer 3: Terraform destroy run karo, aur safety fallback ke taur par `teardown.sh` execute karo taaki **zero orphaned resources** bachein.
+
