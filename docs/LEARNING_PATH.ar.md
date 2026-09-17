@@ -3,7 +3,7 @@
 > 🌐 **Language Selector / مبدّل اللغات / भाषा चुनें**:  
 > [🇬🇧 English](LEARNING_PATH.md) • [🇮🇳 Hinglish](LEARNING_PATH.hi.md) • **[🇸🇦 العربية (الحالية)]**
 
-> **المؤلف**: [Faisal Ansari](https://faisal.host) ([LinkedIn](https://www.linkedin.com/in/clumsyfaisal/) • [GitHub](https://github.com/devopsfaisal))  
+> **المؤلف**: [Faisal Ansari](https://faisal.host) • [LinkedIn](https://www.linkedin.com/in/clumsyfaisal/)  
 > **المنطقة السحابية**: AWS `ap-south-1` (مومباي)  
 > **إصدار Terraform**: `>= 1.9.0` (تم اختباره على `v1.16.3`)  
 > **إصدار Kubernetes**: `1.36` (أحدث إصدار رسمي في بيئات الإنتاج)  

@@ -241,10 +241,3 @@ Architected and crafted with ❤️ by **Faisal Ansari**.
 
 - 🌐 **Portfolio**: [https://faisal.host](https://faisal.host)
 - 💼 **LinkedIn**: [linkedin.com/in/clumsyfaisal](https://www.linkedin.com/in/clumsyfaisal/)
-- 🐙 **GitHub**: [@devopsfaisal](https://github.com/devopsfaisal)
-- 📬 **Inquiries**: Open for Senior DevOps, SRE & Cloud Platform Engineering opportunities.
-
----
-
-## GitHub Repository
-👉 [https://github.com/devopsfaisal/terraform-aws-eks-production](https://github.com/devopsfaisal/terraform-aws-eks-production)
