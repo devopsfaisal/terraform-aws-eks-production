@@ -121,7 +121,8 @@ The architecture follows a modular and least-privilege design:
     │       ├── outputs.tf
     │       └── variables.tf
     ├── scripts
-    │   └── teardown.sh                 # Guaranteed reverse-dependency AWS resource cleanup
+    │   ├── auto-bootstrap.sh           # Auto-creates S3 state bucket & DynamoDB lock table
+    │   └── teardown.sh                 # Guaranteed reverse-dependency AWS resource cleanup & Total Wipeout
     ├── .gitignore
     ├── main.tf                         # Root composition module
     ├── outputs.tf                      # Cluster endpoint, kubeconfig command, SG IDs
@@ -173,7 +174,9 @@ cd terraform-aws-eks-production
 # 2. Prepare variables
 cp terraform.tfvars.example terraform.tfvars
 
-# 3. Format and initialize
+# 3. Auto-bootstrap state backend (S3 & DynamoDB) & initialize
+chmod +x scripts/*.sh
+./scripts/auto-bootstrap.sh
 terraform fmt -recursive
 terraform init
 
@@ -193,9 +196,13 @@ aws eks update-kubeconfig --region ap-south-1 --name eks-production-cluster
 kubectl get nodes -o wide
 ```
 
-### 4. Cleanup / Teardown
+### 4. Cleanup / Total Wipeout
 ```bash
+# Option A: Standard Terraform Destroy (Preserves S3 bucket & DynamoDB)
 terraform destroy -auto-approve
+
+# Option B: Complete Total Wipeout (Destroys EKS, VPC, IAM + S3 & DynamoDB)
+./scripts/teardown.sh
 ```
 
 ---

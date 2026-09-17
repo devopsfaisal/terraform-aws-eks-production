@@ -56,6 +56,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: "ap-south-1"
 
+      - name: Auto-Bootstrap S3 Remote State & DynamoDB Locking
+        run: |
+          chmod +x ./scripts/auto-bootstrap.sh
+          ./scripts/auto-bootstrap.sh
+
       - name: Terraform Init
         run: terraform init
 

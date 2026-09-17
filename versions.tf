@@ -20,12 +20,11 @@ terraform {
     }
   }
 
-  # Production Best Practice: Uncomment after creating S3 bucket & DynamoDB table in ap-south-1
-  # backend "s3" {
-  #   bucket         = "devopsfaisal-terraform-eks-state"
-  #   key            = "eks/production/terraform.tfstate"
-  #   region         = "ap-south-1"
-  #   encrypt        = true
-  #   dynamodb_table = "devopsfaisal-terraform-eks-locks"
-  # }
+  backend "s3" {
+    bucket         = "devopsfaisal-terraform-eks-state"
+    key            = "eks/production/terraform.tfstate"
+    region         = "ap-south-1"
+    encrypt        = true
+    dynamodb_table = "devopsfaisal-terraform-eks-locks"
+  }
 }

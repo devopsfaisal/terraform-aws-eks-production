@@ -358,10 +358,14 @@ Destroy ke liye humne automated trigger ko completely disable kar diya hai.
 
 ### 1. Locally Check and Plan
 ```bash
+# Auto-bootstrap S3 state bucket & DynamoDB locking (Run once or let CI/CD do it)
+chmod +x scripts/auto-bootstrap.sh
+./scripts/auto-bootstrap.sh
+
 # Format code
 terraform fmt -recursive
 
-# Initialize modules & providers
+# Initialize modules & providers with remote S3 backend
 terraform init
 
 # Validate syntax
@@ -388,12 +392,12 @@ kubectl get nodes -o wide
 kubectl get pods -n kube-system
 ```
 
-### 4. Teardown / Cleanup
+### 4. Teardown / Total Wipeout
 ```bash
 # Option A: Standard Terraform Destroy (Jab terraform.tfstate available ho)
 terraform destroy -auto-approve
 
-# Option B: Guaranteed AWS Teardown Script (State loss, orphan cleanup, ya CI/CD fallback ke liye)
+# Option B: Guaranteed AWS Total Wipeout (Cleans EKS, VPC, IAM + S3 State Bucket & DynamoDB)
 chmod +x scripts/teardown.sh
 ./scripts/teardown.sh
 ```

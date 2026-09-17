@@ -246,7 +246,55 @@ for KEY in ${KMS_KEYS}; do
   echo "✅ KMS Key scheduled for deletion."
 done
 
+# ------------------------------------------------------------------------------
+# 8. TOTAL WIPEOUT: S3 State Bucket & DynamoDB Lock Table
+# ------------------------------------------------------------------------------
+STATE_BUCKET="${STATE_BUCKET:-devopsfaisal-terraform-eks-state}"
+LOCK_TABLE="${LOCK_TABLE:-devopsfaisal-terraform-eks-locks}"
+
 echo "=================================================================="
-echo "🎉 AWS INFRASTRUCTURE TEARDOWN COMPLETE!"
-echo "All EKS, VPC, NAT Gateway, Security Groups, and IAM roles are cleaned."
+echo "💥 TOTAL WIPEOUT: Cleaning Backend State Storage & Lock Table"
+echo "=================================================================="
+
+# Delete DynamoDB Lock Table
+if aws dynamodb describe-table --table-name "${LOCK_TABLE}" --region "${REGION}" >/dev/null 2>&1; then
+  echo "⏳ Deleting DynamoDB Lock Table: ${LOCK_TABLE}..."
+  aws dynamodb delete-table --table-name "${LOCK_TABLE}" --region "${REGION}" || true
+  echo "✅ DynamoDB Lock Table deleted."
+fi
+
+# Delete S3 State Bucket (including all versions and delete markers)
+if aws s3api head-bucket --bucket "${STATE_BUCKET}" 2>/dev/null; then
+  echo "⏳ Emptying all object versions from S3 bucket: ${STATE_BUCKET}..."
+  
+  python3 -c "
+import subprocess, json
+
+bucket = '${STATE_BUCKET}'
+cmd = ['aws', 's3api', 'list-object-versions', '--bucket', bucket, '--output', 'json']
+try:
+    res = subprocess.check_output(cmd)
+    data = json.loads(res)
+    to_delete = []
+    for v in data.get('Versions', []):
+        to_delete.append({'Key': v['Key'], 'VersionId': v['VersionId']})
+    for m in data.get('DeleteMarkers', []):
+        to_delete.append({'Key': m['Key'], 'VersionId': m['VersionId']})
+    if to_delete:
+        for i in range(0, len(to_delete), 1000):
+            batch = to_delete[i:i+1000]
+            del_json = json.dumps({'Objects': batch, 'Quiet': True})
+            subprocess.run(['aws', 's3api', 'delete-objects', '--bucket', bucket, '--delete', del_json], check=True)
+except Exception as e:
+    print(f'Bucket cleanup info: {e}')
+" || true
+
+  echo "⏳ Deleting S3 bucket: ${STATE_BUCKET}..."
+  aws s3api delete-bucket --bucket "${STATE_BUCKET}" --region "${REGION}" || true
+  echo "✅ S3 State Bucket deleted."
+fi
+
+echo "=================================================================="
+echo "🎉 AWS INFRASTRUCTURE TOTAL WIPEOUT COMPLETE!"
+echo "All EKS, VPC, NAT Gateway, Security Groups, IAM roles, S3 & DynamoDB are cleaned."
 echo "=================================================================="
