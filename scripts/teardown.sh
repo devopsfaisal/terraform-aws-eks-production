@@ -235,10 +235,20 @@ for ROLE in "${ROLES[@]}"; do
 done
 
 # ------------------------------------------------------------------------------
-# 7. KMS Key
+# 7. KMS Key & Aliases
 # ------------------------------------------------------------------------------
+echo "🔍 Cleaning up KMS Aliases and Keys..."
+ALIASES=$(aws kms list-aliases --region "${REGION}" \
+  --query "Aliases[?contains(AliasName, '${CLUSTER_NAME}')].AliasName" --output text 2>/dev/null || true)
+
+for ALIAS in ${ALIASES}; do
+  echo "⏳ Deleting KMS Alias: ${ALIAS}..."
+  aws kms delete-alias --alias-name "${ALIAS}" --region "${REGION}" || true
+  echo "✅ KMS Alias '${ALIAS}' deleted."
+done
+
 KMS_KEYS=$(aws kms list-aliases --region "${REGION}" \
-  --query "Aliases[?AliasName=='alias/${CLUSTER_NAME}'].TargetKeyId" --output text 2>/dev/null || true)
+  --query "Aliases[?contains(AliasName, '${CLUSTER_NAME}')].TargetKeyId" --output text 2>/dev/null || true)
 
 for KEY in ${KMS_KEYS}; do
   echo "⏳ Scheduling KMS Key deletion for: ${KEY}..."
