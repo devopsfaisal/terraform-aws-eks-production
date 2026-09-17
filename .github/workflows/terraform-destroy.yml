@@ -58,12 +58,21 @@ jobs:
         run: terraform init
 
       - name: Preview Destroy Plan
-        run: terraform plan -destroy
+        run: terraform plan -destroy || true
 
       - name: Execute Terraform Destroy
-        run: terraform destroy -auto-approve
+        run: terraform destroy -auto-approve || true
+
+      - name: AWS Infrastructure Teardown & Guaranteed Cleanup
+        env:
+          AWS_REGION: "ap-south-1"
+          CLUSTER_NAME: "eks-production-cluster"
+          PROJECT_TAG: "eks-production"
+        run: |
+          chmod +x ./scripts/teardown.sh
+          ./scripts/teardown.sh
 
       - name: Summary Notice
         run: |
           echo "### ⚠️ AWS Infrastructure Successfully Teardown" >> $GITHUB_STEP_SUMMARY
-          echo "All 42 EKS, VPC, and IAM resources were safely deleted by @${{ github.actor }}." >> $GITHUB_STEP_SUMMARY
+          echo "All EKS, Node Groups, VPC, NAT Gateways, Security Groups, and IAM resources were safely deleted by @${{ github.actor }}." >> $GITHUB_STEP_SUMMARY

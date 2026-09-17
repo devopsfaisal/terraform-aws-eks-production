@@ -1,12 +1,13 @@
 name: "Terraform Apply / GitOps CD Pipeline"
 
+# Gated Production Trigger: Manual workflow dispatch with approval
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "**.tf"
-      - "**.tfvars*"
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - "**.tf"
+  #     - "**.tfvars*"
   workflow_dispatch:
     inputs:
       approval_confirmation:
